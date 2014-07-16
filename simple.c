@@ -1,4 +1,4 @@
-//========================================================================
+
 // Simple GLFW example
 // Copyright (c) Camilla Berglund <elmindreda@elmindreda.org>
 //
@@ -50,6 +50,7 @@
 #define CH2_LINES 0
 #define CH2_LINE_STRIP 0
 #define CH2_TRIANGLE 0
+#define CH2_QUADS 0
 #define CH2_CIRCLE 0
 #define CH2_QUERY 0
 #define CH2_POLY 0
@@ -83,11 +84,14 @@ GLuint VAO[NumVAOs];
 GLenum PrimType[NumVAOs];
 GLsizei NumElements[NumVAOs];
 struct XForm xform[NumVAOs] = {
-	{{-2.0, 0.0, 0.0}, 0.0, {0.0, 1.0, 0.0}},
-	{{0.0, 0.0, 2.0}, 0.0, {1.0, 0.0, 0.0}},
+	{{-4.0, 0.0, 0.0}, 0.0, {0.0, 1.0, 0.0}},
+	{{0.0, 0.0, 0.0}, 0.0, {1.0, 0.0, 0.0}},
 };
 
 GLfloat Angle = 0.0;
+
+enum {Vertices, Colors, Elements, NumVBOs};
+GLuint buffers[NumVAOs][NumVBOs];
 
 #endif
 #endif
@@ -239,9 +243,6 @@ static void init()
 
 #if CH2_VAO
 
-enum {Vertices, Colors, Elements, NumVBOs};
-GLuint buffers[NumVBOs];
-
 glGenVertexArrays(NumVAOs, VAO);
 
 GLfloat cubeVerts[][3] = {
@@ -256,13 +257,13 @@ GLfloat cubeVerts[][3] = {
 };
 
 GLfloat cubeColors[][3] = {
-	{0.0, 0.0, 0.0},
-	{0.0, 0.0, 1.0},
-	{0.0, 1.0, 0.0},
-	{0.0, 1.0, 1.0},
-	{1.0, 0.0, 0.0},
-	{1.0, 0.0, 1.0},
-	{1.0, 1.0, 0.0},
+	{1.0, 1.0, 1.0},
+	{1.0, 1.0, 1.0},
+	{1.0, 1.0, 1.0},
+	{1.0, 1.0, 1.0},
+	{1.0, 1.0, 1.0},
+	{1.0, 1.0, 1.0},
+	{1.0, 1.0, 1.0},
 	{1.0, 1.0, 1.0},
 };
 
@@ -272,22 +273,22 @@ GLubyte cubeIndices[] = {
 	2, 3, 7, 6,
 	0, 4, 5, 1,
 	0, 2, 6, 4,
-	1, 5, 7, 3,
+	1, 3, 7, 5,
 };
 
 glBindVertexArray(VAO[Cube]);
-glGenBuffers(NumVBOs, buffers);
-glBindBuffer(GL_ARRAY_BUFFER, buffers[Vertices]);
+glGenBuffers(NumVBOs, buffers[Cube]);
+glBindBuffer(GL_ARRAY_BUFFER, buffers[Cube][Vertices]);
 glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVerts), cubeVerts, GL_STATIC_DRAW);
 glVertexPointer(3, GL_FLOAT, 0, BUFFER_OFFSET(0));
 glEnableClientState(GL_VERTEX_ARRAY);
 
-glBindBuffer(GL_ARRAY_BUFFER, buffers[Colors]);
+glBindBuffer(GL_ARRAY_BUFFER, buffers[Cube][Colors]);
 glBufferData(GL_ARRAY_BUFFER, sizeof(cubeColors), cubeColors, GL_STATIC_DRAW);
 glColorPointer(3, GL_FLOAT, 0, BUFFER_OFFSET(0));
 glEnableClientState(GL_COLOR_ARRAY);
 
-glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers[Elements]);
+glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers[Cube][Elements]);
 glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(cubeIndices), cubeIndices, GL_STATIC_DRAW);
 
 PrimType[Cube] = GL_QUADS;
@@ -295,17 +296,20 @@ NumElements[Cube] = NumberOf(cubeIndices);
 
 int i, idx;
 float dTheta;
-#define NumConePoints 36
+#define NumConePoints 100
 GLfloat coneVerts[NumConePoints + 1][3] = {
-	{0.0, 0.0, 1.0},
+	{0.0, 0.0, -1.0},
 };
 
 GLfloat coneColors[NumConePoints + 1][3] = {
 	{1.0, 1.0, 1.0},
 };
 
-GLubyte coneIndices[NumConePoints + 1];
-dTheta = 2 * PI / (NumConePoints - 1);
+GLubyte coneIndices[NumConePoints + 1] = {
+	0,
+};
+
+dTheta = 2 * PI / (NumConePoints);
 idx = 1;
 for (i = 0; i < NumConePoints; i++, idx++) {
 	float theta = i * dTheta;
@@ -318,19 +322,27 @@ for (i = 0; i < NumConePoints; i++, idx++) {
 	coneIndices[idx] = idx;
 }
 
+coneVerts[NumConePoints][0] = coneVerts[1][0];
+coneVerts[NumConePoints][1] = coneVerts[1][1];
+coneVerts[NumConePoints][2] = 0;
+coneColors[NumConePoints][0] = coneColors[1][0];
+coneColors[NumConePoints][1] = coneColors[1][1];
+coneColors[NumConePoints][2] = coneColors[1][2];
+//coneIndices[NumConePoints] = NumConePoints;
+
 glBindVertexArray(VAO[Cone]);
-glGenBuffers(NumVBOs, buffers);
-glBindBuffer(GL_ARRAY_BUFFER, buffers[Vertices]);
+glGenBuffers(NumVBOs, buffers[Cone]);
+glBindBuffer(GL_ARRAY_BUFFER, buffers[Cone][Vertices]);
 glBufferData(GL_ARRAY_BUFFER, sizeof(coneVerts), coneVerts, GL_STATIC_DRAW);
 glVertexPointer(3, GL_FLOAT, 0, BUFFER_OFFSET(0));
 glEnableClientState(GL_VERTEX_ARRAY);
 
-glBindBuffer(GL_ARRAY_BUFFER, buffers[Colors]);
+glBindBuffer(GL_ARRAY_BUFFER, buffers[Cone][Colors]);
 glBufferData(GL_ARRAY_BUFFER, sizeof(coneColors), coneColors, GL_STATIC_DRAW);
 glColorPointer(3, GL_FLOAT, 0, BUFFER_OFFSET(0));
 glEnableClientState(GL_COLOR_ARRAY);
 
-glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers[Elements]);
+glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers[Cone][Elements]);
 glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(coneIndices), coneIndices, GL_STATIC_DRAW);
 
 PrimType[Cone] = GL_TRIANGLE_FAN;
@@ -375,16 +387,16 @@ int main(void)
         ratio = width / (float) height;
 
         glViewport(0, 0, width, height);
-		glClearColor(0, 0.5, 0.5, 0.5);
+		glClearColor(0, 0, 0, 0);
         glClear(GL_COLOR_BUFFER_BIT);
 
         glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
-        glOrtho(-ratio, ratio, -1.f, 1.f, 1.f, -1.f);
+        glOrtho(-ratio * 4, ratio * 4 , -1.f * 4, 1.f * 4, 10000.f, -10000.f);
         glMatrixMode(GL_MODELVIEW);
-
         glLoadIdentity();
-        //glRotatef((float) glfwGetTime() * 50.f, 0.f, 0.f, 1.f);
+        glRotatef((float) glfwGetTime() * 50.f, 1.f, 0.f, 0.f);
+
 #if CH2_TRIANGLE // triangle
         glBegin(GL_TRIANGLES);
         glColor3f(1.f, 1.f, 0.f);
@@ -393,6 +405,18 @@ int main(void)
         glVertex3f(0.6f, -0.4f, 0.f);
         glColor3f(1.f, 1.f, 1.f);
         glVertex3f(0.f, 0.6f, 0.f);
+        glEnd();
+#endif
+
+#if CH2_QUADS
+        glBegin(GL_QUADS);
+        glColor3f(1.f, 1.f, 0.f);
+        glVertex3f(-1.0f, -1.0f, 0.f);
+        glColor3f(0.f, 1.f, 1.f);
+        glVertex3f(-1.0f, 1.0f, 0.f);
+        glColor3f(1.f, 1.f, 1.f);
+        glVertex3f(1.f, 1.0f, 0.f);
+        glVertex3f(1.f, -1.0f, 0.f);
         glEnd();
 #endif
 	
@@ -498,6 +522,11 @@ int main(void)
 			glTranslatef(xform[i].xlate.x, xform[i].xlate.y, xform[i].xlate.z);
 			glRotatef(xform[i].angle, xform[i].axis.x, xform[i].axis.y, xform[i].axis.z);
 			glBindVertexArray(VAO[i]);
+			glBindBuffer(GL_ARRAY_BUFFER, buffers[i][Vertices]);
+			glVertexPointer(3, GL_FLOAT, 0, BUFFER_OFFSET(0));
+			glBindBuffer(GL_ARRAY_BUFFER, buffers[i][Colors]);
+			glColorPointer(3, GL_FLOAT, 0, BUFFER_OFFSET(0));
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers[i][Elements]);
 			glDrawElements(PrimType[i], NumElements[i], GL_UNSIGNED_BYTE, BUFFER_OFFSET(0));
 			glPopMatrix();
 		}
