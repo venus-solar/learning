@@ -31,8 +31,8 @@
 #include <math.h>
 
 #define CH1 0
-#define CH2 1
-#define CH3 0
+#define CH2 0
+#define CH3 1
 #define CH4 0
 #define CH5 0
 #define CH6 0
@@ -57,11 +57,34 @@
 #define CH2_BATCH 0
 #define CH2_PRIMRESTART 0
 #define CH2_BUFFER 0
-#define CH2_VAO 1
+#define CH2_VAO 0
+
+#define CH3_CLIP 1
 
 #define PI 3.1415926535898
 #define GL_TRUE 1
 #define GL_FALSE 0
+
+/*****************************************************************************
+ * Calculate the angle to be passed to gluPerspective() so that a scene
+ * is visible.  This function originates from the OpenGL Red Book.
+ *
+ * Parms   : size
+ *           The size of the segment when the angle is intersected at "dist"
+ *           (ie at the outermost edge of the angle of vision).
+ *
+ *           dist
+ *           Distance from viewpoint to scene.
+ *****************************************************************************/
+GLfloat PerspectiveAngle( GLfloat size,
+                          GLfloat dist )
+{
+   GLfloat radTheta, degTheta;
+
+   radTheta = 2.f * (GLfloat) atan2( size / 2.f, dist );
+   degTheta = (180.f * radTheta) / (GLfloat) M_PI;
+   return degTheta;
+}
 
 
 
@@ -96,6 +119,18 @@ GLuint buffers[NumVAOs][NumVBOs];
 #endif
 #endif
 
+#if CH3
+#define BUFFER_OFFSET(of) ((GLvoid *)NULL + of)
+#define NumberOf(array) (sizeof(array) / sizeof (array[0]))
+#if CH3_CLIP
+enum {Cube, NumVAOs};
+GLuint VAO[NumVAOs];
+GLenum PrimType[NumVAOs];
+GLsizei NumElements[NumVAOs];
+enum {Vertices, Colors, Elements, NumVBOs};
+GLuint buffers[NumVAOs][NumVBOs];
+#endif
+#endif
 
 static void error_callback(int error, const char* description)
 {
@@ -242,7 +277,6 @@ static void init()
 #endif
 
 #if CH2_VAO
-
 glGenVertexArrays(NumVAOs, VAO);
 
 GLfloat cubeVerts[][3] = {
@@ -352,6 +386,64 @@ glEnable(GL_DEPTH_TEST);
 
 #endif
 
+#endif
+
+#if CH3
+#if CH3_CLIP
+glClearColor(0, 0, 0, 0);
+glShadeModel(GL_FLAT);
+
+glGenVertexArrays(NumVAOs, VAO);
+GLfloat cubeVerts[][3] = {
+	{-1.0, -1.0, -1.0},
+	{-1.0, -1.0, 1.0},
+	{-1.0, 1.0, -1.0},
+	{-1.0, 1.0, 1.0},
+	{1.0, -1.0, -1.0},
+	{1.0, -1.0, 1.0},
+	{1.0, 1.0, -1.0},
+	{1.0, 1.0, 1.0},
+};
+
+GLfloat cubeColors[][3] = {
+	{1.0, 1.0, 1.0},
+	{1.0, 1.0, 1.0},
+	{1.0, 1.0, 1.0},
+	{1.0, 1.0, 1.0},
+	{1.0, 1.0, 1.0},
+	{1.0, 1.0, 1.0},
+	{1.0, 1.0, 1.0},
+	{1.0, 1.0, 1.0},
+};
+
+GLubyte cubeIndices[] = {
+	0, 1, 3, 2,
+	4, 6, 7, 5,
+	2, 3, 7, 6,
+	0, 4, 5, 1,
+	0, 2, 6, 4,
+	1, 3, 7, 5,
+};
+
+glBindVertexArray(VAO[Cube]);
+glGenBuffers(NumVBOs, buffers[Cube]);
+glBindBuffer(GL_ARRAY_BUFFER, buffers[Cube][Vertices]);
+glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVerts), cubeVerts, GL_STATIC_DRAW);
+glVertexPointer(3, GL_FLOAT, 0, BUFFER_OFFSET(0));
+glEnableClientState(GL_VERTEX_ARRAY);
+
+glBindBuffer(GL_ARRAY_BUFFER, buffers[Cube][Colors]);
+glBufferData(GL_ARRAY_BUFFER, sizeof(cubeColors), cubeColors, GL_STATIC_DRAW);
+glColorPointer(3, GL_FLOAT, 0, BUFFER_OFFSET(0));
+glEnableClientState(GL_COLOR_ARRAY);
+
+glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers[Cube][Elements]);
+glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(cubeIndices), cubeIndices, GL_STATIC_DRAW);
+
+PrimType[Cube] = GL_QUADS;
+NumElements[Cube] = NumberOf(cubeIndices);
+
+#endif
 #endif
 }
 
@@ -533,6 +625,47 @@ int main(void)
 		glPopMatrix();
 #endif
 
+#endif
+
+#if CH3
+#if CH3_CLIP
+		int i;
+        glfwGetFramebufferSize(window, &width, &height);
+        ratio = width / (float) height;
+
+		glClear(GL_COLOR_BUFFER_BIT);
+        glViewport(0, 0, width, height);
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
+        //glOrtho(-ratio * 4, ratio * 4 , -1.f * 4, 1.f * 4, 10000.f, -10000.f);
+        gluPerspective(60, ratio, 1, 2000000);
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
+		glTranslatef(0, 0, -1.5);
+        glRotatef((float) glfwGetTime() * 50.f, 1.f, 0.f, 0.f);
+
+		//GLdouble eqn[4] = {0, 1, 0, 0};
+		//GLdouble eqn2[4] = {1, 0, 0, 0};
+		//glPushMatrix();
+		//glTranslatef(0, 0, 0);
+		//glClipPlane(GL_CLIP_PLANE0, eqn);
+		//glEnable(GL_CLIP_PLANE0);
+		//glClipPlane(GL_CLIP_PLANE1, eqn2);
+		//glEnable(GL_CLIP_PLANE1);
+		//glRotatef(90, 1, 0, 0);
+
+		for (i = 0; i < NumVAOs; i++) {
+			glBindVertexArray(VAO[i]);
+			glBindBuffer(GL_ARRAY_BUFFER, buffers[i][Vertices]);
+			glVertexPointer(3, GL_FLOAT, 0, BUFFER_OFFSET(0));
+			glBindBuffer(GL_ARRAY_BUFFER, buffers[i][Colors]);
+			glColorPointer(3, GL_FLOAT, 0, BUFFER_OFFSET(0));
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers[i][Elements]);
+			glDrawElements(PrimType[i], NumElements[i], GL_UNSIGNED_BYTE, BUFFER_OFFSET(0));
+		}
+
+		//glPopMatrix();
+#endif
 #endif
 
 
