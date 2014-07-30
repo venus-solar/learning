@@ -60,6 +60,7 @@
 #define CH2_VAO 0
 
 #define CH3_CLIP 1
+#define CH3_PLANET 0
 
 #define PI 3.1415926535898
 #define GL_TRUE 1
@@ -130,6 +131,16 @@ GLsizei NumElements[NumVAOs];
 enum {Vertices, Colors, Elements, NumVBOs};
 GLuint buffers[NumVAOs][NumVBOs];
 #endif
+
+#if CH3_PLANET
+enum {Cube, Cube2, NumVAOs};
+GLuint VAO[NumVAOs];
+GLenum PrimType[NumVAOs];
+GLsizei NumElements[NumVAOs];
+enum {Vertices, Colors, Elements, NumVBOs};
+GLuint buffers[NumVAOs][NumVBOs];
+#endif
+
 #endif
 
 static void error_callback(int error, const char* description)
@@ -444,6 +455,111 @@ PrimType[Cube] = GL_QUADS;
 NumElements[Cube] = NumberOf(cubeIndices);
 
 #endif
+
+#if CH3_PLANET
+glClearColor(0, 0, 0, 0);
+glShadeModel(GL_FLAT);
+
+glGenVertexArrays(NumVAOs, VAO);
+GLfloat cubeVerts[][3] = {
+	{-1.0, -1.0, -1.0},
+	{-1.0, -1.0, 1.0},
+	{-1.0, 1.0, -1.0},
+	{-1.0, 1.0, 1.0},
+	{1.0, -1.0, -1.0},
+	{1.0, -1.0, 1.0},
+	{1.0, 1.0, -1.0},
+	{1.0, 1.0, 1.0},
+};
+
+GLfloat cubeColors[][3] = {
+	{1.0, 1.0, 1.0},
+	{1.0, 1.0, 1.0},
+	{1.0, 1.0, 1.0},
+	{1.0, 1.0, 1.0},
+	{1.0, 1.0, 1.0},
+	{1.0, 1.0, 1.0},
+	{1.0, 1.0, 1.0},
+	{1.0, 1.0, 1.0},
+};
+
+GLubyte cubeIndices[] = {
+	0, 1, 3, 2,
+	4, 6, 7, 5,
+	2, 3, 7, 6,
+	0, 4, 5, 1,
+	0, 2, 6, 4,
+	1, 3, 7, 5,
+};
+
+glBindVertexArray(VAO[Cube]);
+glGenBuffers(NumVBOs, buffers[Cube]);
+glBindBuffer(GL_ARRAY_BUFFER, buffers[Cube][Vertices]);
+glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVerts), cubeVerts, GL_STATIC_DRAW);
+glVertexPointer(3, GL_FLOAT, 0, BUFFER_OFFSET(0));
+glEnableClientState(GL_VERTEX_ARRAY);
+
+glBindBuffer(GL_ARRAY_BUFFER, buffers[Cube][Colors]);
+glBufferData(GL_ARRAY_BUFFER, sizeof(cubeColors), cubeColors, GL_STATIC_DRAW);
+glColorPointer(3, GL_FLOAT, 0, BUFFER_OFFSET(0));
+glEnableClientState(GL_COLOR_ARRAY);
+
+glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers[Cube][Elements]);
+glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(cubeIndices), cubeIndices, GL_STATIC_DRAW);
+
+PrimType[Cube] = GL_QUADS;
+NumElements[Cube] = NumberOf(cubeIndices);
+
+GLfloat cubeVerts2[][3] = {
+	{-0.5, -0.5, -0.5},
+	{-0.5, -0.5, 0.5},
+	{-0.5, 0.5, -0.5},
+	{-0.5, 0.5, 0.5},
+	{0.5, -0.5, -0.5},
+	{0.5, -0.5, 0.5},
+	{0.5, 0.5, -0.5},
+	{0.5, 0.5, 0.5},
+};
+
+GLfloat cubeColors2[][3] = {
+	{1.0, 1.0, 1.0},
+	{1.0, 1.0, 1.0},
+	{1.0, 1.0, 1.0},
+	{1.0, 1.0, 1.0},
+	{1.0, 1.0, 1.0},
+	{1.0, 1.0, 1.0},
+	{1.0, 1.0, 1.0},
+	{1.0, 1.0, 1.0},
+};
+
+GLubyte cubeIndices2[] = {
+	0, 1, 3, 2,
+	4, 6, 7, 5,
+	2, 3, 7, 6,
+	0, 4, 5, 1,
+	0, 2, 6, 4,
+	1, 3, 7, 5,
+};
+
+glBindVertexArray(VAO[Cube2]);
+glGenBuffers(NumVBOs, buffers[Cube2]);
+glBindBuffer(GL_ARRAY_BUFFER, buffers[Cube2][Vertices]);
+glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVerts2), cubeVerts2, GL_STATIC_DRAW);
+glVertexPointer(3, GL_FLOAT, 0, BUFFER_OFFSET(0));
+glEnableClientState(GL_VERTEX_ARRAY);
+
+glBindBuffer(GL_ARRAY_BUFFER, buffers[Cube2][Colors]);
+glBufferData(GL_ARRAY_BUFFER, sizeof(cubeColors2), cubeColors2, GL_STATIC_DRAW);
+glColorPointer(3, GL_FLOAT, 0, BUFFER_OFFSET(0));
+glEnableClientState(GL_COLOR_ARRAY);
+
+glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers[Cube2][Elements]);
+glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(cubeIndices2), cubeIndices2, GL_STATIC_DRAW);
+
+PrimType[Cube2] = GL_QUADS;
+NumElements[Cube2] = NumberOf(cubeIndices2);
+#endif
+
 #endif
 }
 
@@ -637,22 +753,23 @@ int main(void)
         glViewport(0, 0, width, height);
         glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
-        //glOrtho(-ratio * 4, ratio * 4 , -1.f * 4, 1.f * 4, 10000.f, -10000.f);
-        gluPerspective(60, ratio, 1, 2000000);
+        //gluPerspective(60, ratio, 1, 20); doesn't work!!!!!!!!!
+        glOrtho(-ratio * 4, ratio * 4 , -1.f * 4, 1.f * 4, 10000.f, -10000.f);
+		//glFrustum(-2, 2, -2/ratio, 2/ratio, 1, 20);
         glMatrixMode(GL_MODELVIEW);
         glLoadIdentity();
-		glTranslatef(0, 0, -1.5);
-        glRotatef((float) glfwGetTime() * 50.f, 1.f, 0.f, 0.f);
+		glScalef(2, 1, 1);
+		glTranslatef(2, 0, -10.0);
+        //glRotatef((float) glfwGetTime() * 50.f, 1.f, 0.f, 0.f);
 
-		//GLdouble eqn[4] = {0, 1, 0, 0};
-		//GLdouble eqn2[4] = {1, 0, 0, 0};
-		//glPushMatrix();
-		//glTranslatef(0, 0, 0);
-		//glClipPlane(GL_CLIP_PLANE0, eqn);
-		//glEnable(GL_CLIP_PLANE0);
-		//glClipPlane(GL_CLIP_PLANE1, eqn2);
-		//glEnable(GL_CLIP_PLANE1);
-		//glRotatef(90, 1, 0, 0);
+#if 0
+		GLdouble eqn[4] = {0, 1, 0, 0};
+		GLdouble eqn2[4] = {1, 0, 0, 0};
+		glClipPlane(GL_CLIP_PLANE0, eqn);
+		glEnable(GL_CLIP_PLANE0);
+		glClipPlane(GL_CLIP_PLANE1, eqn2);
+		glEnable(GL_CLIP_PLANE1);
+#endif
 
 		for (i = 0; i < NumVAOs; i++) {
 			glBindVertexArray(VAO[i]);
@@ -663,9 +780,49 @@ int main(void)
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers[i][Elements]);
 			glDrawElements(PrimType[i], NumElements[i], GL_UNSIGNED_BYTE, BUFFER_OFFSET(0));
 		}
+#endif
+
+#if CH3_PLANET
+        glfwGetFramebufferSize(window, &width, &height);
+        ratio = width / (float) height;
+
+		glClear(GL_COLOR_BUFFER_BIT);
+        glViewport(0, 0, width, height);
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
+		glFrustum(-5, 5, -5/ratio, 5/ratio, 1, 20);
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
+	    gluLookAt(0.0, 0.0, 5.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
+		//glTranslatef(0, 0, -3.0);
+        //glRotatef((float) glfwGetTime() * 50.f, 1.f, 0.f, 0.f);
+
+		glPushMatrix();
+        glRotatef((float) glfwGetTime() * 50.f, 0.f, 1.f, 0.f);
+		glBindVertexArray(VAO[0]);
+		glBindBuffer(GL_ARRAY_BUFFER, buffers[0][Vertices]);
+		glVertexPointer(3, GL_FLOAT, 0, BUFFER_OFFSET(0));
+		glBindBuffer(GL_ARRAY_BUFFER, buffers[0][Colors]);
+		glColorPointer(3, GL_FLOAT, 0, BUFFER_OFFSET(0));
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers[0][Elements]);
+		glDrawElements(PrimType[0], NumElements[0], GL_UNSIGNED_BYTE, BUFFER_OFFSET(0));
+		glPopMatrix();
+		
+        glRotatef((float) glfwGetTime() * 50.f, 0.f, 1.f, 0.f);
+		glTranslatef(4, 0, 0);
+        glRotatef((float) glfwGetTime() * 50.f, 0.f, 1.f, 0.f);
+		glBindVertexArray(VAO[1]);
+		glBindBuffer(GL_ARRAY_BUFFER, buffers[1][Vertices]);
+		glVertexPointer(3, GL_FLOAT, 0, BUFFER_OFFSET(0));
+		glBindBuffer(GL_ARRAY_BUFFER, buffers[1][Colors]);
+		glColorPointer(3, GL_FLOAT, 0, BUFFER_OFFSET(0));
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers[1][Elements]);
+		glDrawElements(PrimType[1], NumElements[1], GL_UNSIGNED_BYTE, BUFFER_OFFSET(0));
+	
 
 		//glPopMatrix();
 #endif
+
 #endif
 
 
