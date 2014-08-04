@@ -32,9 +32,9 @@
 
 #define CH1 0
 #define CH2 0
-#define CH3 1
+#define CH3 0
 #define CH4 0
-#define CH5 0
+#define CH5 1
 #define CH6 0
 #define CH7 0
 #define CH8 0
@@ -61,6 +61,8 @@
 
 #define CH3_CLIP 1
 #define CH3_PLANET 0
+
+#define CH5_LIGHT1 1
 
 #define PI 3.1415926535898
 #define GL_TRUE 1
@@ -140,6 +142,10 @@ GLsizei NumElements[NumVAOs];
 enum {Vertices, Colors, Elements, NumVBOs};
 GLuint buffers[NumVAOs][NumVBOs];
 #endif
+
+#endif
+
+#if CH5
 
 #endif
 
@@ -417,14 +423,14 @@ GLfloat cubeVerts[][3] = {
 };
 
 GLfloat cubeColors[][3] = {
+	{1.0, 0.0, 0.0},
+	{0.0, 1.0, 0.0},
+	{0.0, 0.0, 1.0},
+	{1.0, 1.0, 0.0},
+	{1.0, 0.0, 1.0},
+	{0.0, 1.0, 1.0},
 	{1.0, 1.0, 1.0},
-	{1.0, 1.0, 1.0},
-	{1.0, 1.0, 1.0},
-	{1.0, 1.0, 1.0},
-	{1.0, 1.0, 1.0},
-	{1.0, 1.0, 1.0},
-	{1.0, 1.0, 1.0},
-	{1.0, 1.0, 1.0},
+	{0.5, 0.5, 0.5},
 };
 
 GLubyte cubeIndices[] = {
@@ -560,6 +566,28 @@ PrimType[Cube2] = GL_QUADS;
 NumElements[Cube2] = NumberOf(cubeIndices2);
 #endif
 
+#endif
+
+#if CH5
+#if CH5_LIGHT1
+	GLfloat mat_specular[] = {0.7, 0.2, 0.5, 1.0};
+	GLfloat mat_shininess[] = {50.0};
+	GLfloat light_pos[] = {0.0, 0.0, 3.0, 1.0};
+	GLfloat white_light[] = {1.0, 1.0, 1.0, 1.0};
+	GLfloat lmodel_ambient[] = {0.1, 0.1, 0.1, 1.0};
+	glClearColor(0, 0, 0, 0);
+	glShadeModel(GL_SMOOTH);
+	glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
+	glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
+	glLightfv(GL_LIGHT0, GL_POSITION, light_pos);
+	glLightfv(GL_LIGHT0, GL_DIFFUSE, white_light);
+	glLightfv(GL_LIGHT0, GL_SPECULAR, white_light);
+	glLightModelfv(GL_LIGHT_MODEL_AMBIENT, lmodel_ambient);
+
+	glEnable(GL_LIGHTING);
+	glEnable(GL_LIGHT0);
+	glEnable(GL_DEPTH_TEST);
+#endif
 #endif
 }
 
@@ -759,8 +787,8 @@ int main(void)
         glMatrixMode(GL_MODELVIEW);
         glLoadIdentity();
 		glScalef(2, 1, 1);
-		glTranslatef(2, 0, -10.0);
-        //glRotatef((float) glfwGetTime() * 50.f, 1.f, 0.f, 0.f);
+		glTranslatef(0, 0, -10.0);
+        glRotatef((float) glfwGetTime() * 50.f, 1.f, 0.f, 0.f);
 
 #if 0
 		GLdouble eqn[4] = {0, 1, 0, 0};
@@ -823,6 +851,66 @@ int main(void)
 		//glPopMatrix();
 #endif
 
+#endif
+
+#if CH5
+#if CH5_LIGHT1
+        glfwGetFramebufferSize(window, &width, &height);
+        ratio = width / (float) height;
+
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glViewport(0, 0, width, height);
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
+        glOrtho(-ratio * 4, ratio * 4 , -1.f * 4, 1.f * 4, 10000.f, -10000.f);
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
+        glRotatef((float) glfwGetTime() * 50.f, 1.f, 0.f, 0.f);
+
+		glBegin(GL_QUADS);
+		glNormal3f(0,0,-1); 
+		glColor3f(1,0,0);
+		glVertex3f(0,0,0);
+		glVertex3f(1,0,0);
+		glVertex3f(1,1,0);
+		glVertex3f(0,1,0);
+
+		glNormal3f(-1,0,0);//右
+		glColor3f(0,1,0);
+		glVertex3f(1,0, 0);
+		glVertex3f(1,0,-1);
+		glVertex3f(1,1,-1);
+		glVertex3f(1,1, 0);
+
+		glNormal3f(0,-1,0);//上
+		glColor3f(0,0,1);
+		glVertex3f(0,1, 0);
+		glVertex3f(1,1, 0);
+		glVertex3f(1,1,-1);
+		glVertex3f(0,1,-1);
+
+		glNormal3f(0,0,1); //后
+		glColor3f(1,1,0);
+		glVertex3f(0,1,-1);
+		glVertex3f(1,1,-1);
+		glVertex3f(1,0,-1);
+		glVertex3f(0,0,-1);
+
+		glNormal3f(1,0,0);//左
+		glColor3f(0,1,1);
+		glVertex3f(0,1, 0);
+		glVertex3f(0,1,-1);
+		glVertex3f(0,0,-1);
+		glVertex3f(0,0, 0);
+
+		glNormal3f(0,1,0);//下
+		glColor3f(1,0,1);
+		glVertex3f(0,0,-1);
+		glVertex3f(1,0,-1);
+		glVertex3f(1,0, 0);
+		glVertex3f(0,0, 0);
+		glEnd();
+#endif
 #endif
 
 
