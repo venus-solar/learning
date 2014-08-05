@@ -34,8 +34,8 @@
 #define CH2 0
 #define CH3 0
 #define CH4 0
-#define CH5 1
-#define CH6 0
+#define CH5 0
+#define CH6 1
 #define CH7 0
 #define CH8 0
 #define CH9 0
@@ -59,10 +59,14 @@
 #define CH2_BUFFER 0
 #define CH2_VAO 0
 
-#define CH3_CLIP 1
+#define CH3_CLIP 0
 #define CH3_PLANET 0
 
-#define CH5_LIGHT1 1
+#define CH5_LIGHT_SPINOBJ 0
+#define CH5_MOVELIGHT 0
+
+#define CH6_BLEND_TRIANGLE 0
+#define CH6_LINE_ANTI 1
 
 #define PI 3.1415926535898
 #define GL_TRUE 1
@@ -145,9 +149,34 @@ GLuint buffers[NumVAOs][NumVBOs];
 
 #endif
 
-#if CH5
+
+#if CH6
+#if CH6_BLEND_TRIANGLE
+static void drawLeftTriangle(void)
+{
+	glBegin(GL_TRIANGLES);
+	glColor4f(1, 1, 0, 0.75);
+	glVertex3f(0.1, 0.9, 0.0);
+	glVertex3f(0.1, 0.1, 0.0);
+	glVertex3f(0.7, 0.5, 0.0);
+	glEnd();
+}
+
+static void drawRightTriangle(void)
+{
+	glBegin(GL_TRIANGLES);
+	glColor4f(0, 1, 1, 0.75);
+	glVertex3f(0.9, 0.9, 0.0);
+	glVertex3f(0.3, 0.5, 0.0);
+	glVertex3f(0.9, 0.1, 0.0);
+	glEnd();
+}
 
 #endif
+
+
+#endif
+
 
 static void error_callback(int error, const char* description)
 {
@@ -569,7 +598,7 @@ NumElements[Cube2] = NumberOf(cubeIndices2);
 #endif
 
 #if CH5
-#if CH5_LIGHT1
+#if CH5_LIGHT_SPINOBJ
 	GLfloat mat_specular[] = {0.7, 0.2, 0.5, 1.0};
 	GLfloat mat_shininess[] = {50.0};
 	GLfloat light_pos[] = {0.0, 0.0, 3.0, 1.0};
@@ -588,6 +617,48 @@ NumElements[Cube2] = NumberOf(cubeIndices2);
 	glEnable(GL_LIGHT0);
 	glEnable(GL_DEPTH_TEST);
 #endif
+
+#if CH5_MOVELIGHT
+	GLfloat mat_specular[] = {0.7, 0.2, 0.5, 1.0};
+	GLfloat mat_shininess[] = {50.0};
+	GLfloat light_pos[] = {0.0, 0.0, 3.0, 1.0};
+	GLfloat white_light[] = {1.0, 1.0, 1.0, 1.0};
+	GLfloat lmodel_ambient[] = {0.1, 0.1, 0.1, 1.0};
+	glClearColor(0, 0, 0, 0);
+	glShadeModel(GL_SMOOTH);
+	glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
+	glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
+	glLightfv(GL_LIGHT0, GL_POSITION, light_pos);
+	glLightfv(GL_LIGHT0, GL_DIFFUSE, white_light);
+	glLightfv(GL_LIGHT0, GL_SPECULAR, white_light);
+	glLightModelfv(GL_LIGHT_MODEL_AMBIENT, lmodel_ambient);
+
+	glEnable(GL_LIGHTING);
+	glEnable(GL_LIGHT0);
+	glEnable(GL_DEPTH_TEST);
+#endif
+
+#endif
+
+#if CH6
+#if CH6_BLEND_TRIANGLE
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glShadeModel(GL_SMOOTH);
+	glClearColor(0, 0, 0, 0);
+#endif
+
+#if CH6_LINE_ANTI
+#if 0
+	glEnable(GL_BLEND);
+	glEnable(GL_LINE_SMOOTH);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
+	glClearColor(0, 0, 0, 0);
+#endif
+#endif
+
+
 #endif
 }
 
@@ -854,7 +925,7 @@ int main(void)
 #endif
 
 #if CH5
-#if CH5_LIGHT1
+#if CH5_LIGHT_SPINOBJ
         glfwGetFramebufferSize(window, &width, &height);
         ratio = width / (float) height;
 
@@ -910,6 +981,123 @@ int main(void)
 		glVertex3f(1,0, 0);
 		glVertex3f(0,0, 0);
 		glEnd();
+#endif
+
+#if CH5_MOVELIGHT
+        glfwGetFramebufferSize(window, &width, &height);
+        ratio = width / (float) height;
+
+		GLfloat light_pos[] = {0.0, 0.0, 3.0, 1.0};
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glViewport(0, 0, width, height);
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
+        glOrtho(-ratio * 4, ratio * 4 , -1.f * 4, 1.f * 4, 10000.f, -10000.f);
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
+
+		glPushMatrix();
+        glRotatef((float) glfwGetTime() * 50.f, 1.f, 0.f, 0.f);
+		glLightfv(GL_LIGHT0, GL_POSITION, light_pos);
+		glPopMatrix();
+
+		glBegin(GL_QUADS);
+		glNormal3f(0,0,-1); 
+		glColor3f(1,0,0);
+		glVertex3f(0,0,0);
+		glVertex3f(1,0,0);
+		glVertex3f(1,1,0);
+		glVertex3f(0,1,0);
+
+		glNormal3f(-1,0,0);//右
+		glColor3f(0,1,0);
+		glVertex3f(1,0, 0);
+		glVertex3f(1,0,-1);
+		glVertex3f(1,1,-1);
+		glVertex3f(1,1, 0);
+
+		glNormal3f(0,-1,0);//上
+		glColor3f(0,0,1);
+		glVertex3f(0,1, 0);
+		glVertex3f(1,1, 0);
+		glVertex3f(1,1,-1);
+		glVertex3f(0,1,-1);
+
+		glNormal3f(0,0,1); //后
+		glColor3f(1,1,0);
+		glVertex3f(0,1,-1);
+		glVertex3f(1,1,-1);
+		glVertex3f(1,0,-1);
+		glVertex3f(0,0,-1);
+
+		glNormal3f(1,0,0);//左
+		glColor3f(0,1,1);
+		glVertex3f(0,1, 0);
+		glVertex3f(0,1,-1);
+		glVertex3f(0,0,-1);
+		glVertex3f(0,0, 0);
+
+		glNormal3f(0,1,0);//下
+		glColor3f(1,0,1);
+		glVertex3f(0,0,-1);
+		glVertex3f(1,0,-1);
+		glVertex3f(1,0, 0);
+		glVertex3f(0,0, 0);
+		glEnd();
+#endif
+
+#endif
+
+#if CH6
+#if CH6_BLEND_TRIANGLE
+        glfwGetFramebufferSize(window, &width, &height);
+        ratio = width / (float) height;
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glViewport(0, 0, width, height);
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
+        glOrtho(-ratio * 4, ratio * 4 , -1.f * 4, 1.f * 4, 10000.f, -10000.f);
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
+
+		if (0) {
+			drawLeftTriangle();
+			drawRightTriangle();
+		} else {
+			drawRightTriangle();
+			drawLeftTriangle();
+		}
+#endif
+
+#if CH6_LINE_ANTI
+        glfwGetFramebufferSize(window, &width, &height);
+        ratio = width / (float) height;
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glViewport(0, 0, width, height);
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
+        glOrtho(-ratio * 2, ratio * 2 , -1.f * 2, 1.f * 2, 10000.f, -10000.f);
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
+        glRotatef((float) glfwGetTime() * 50.f, 0.f, 0.f, 1.f);
+		
+		glLineWidth(8);
+		glColor3f(0.0, 1.0, 0.0);
+		glPushMatrix();
+		glBegin(GL_LINES);
+		glVertex2f(-0.5, 0.5);
+		glVertex2f(0.5, -0.5);
+		glPopMatrix();
+		glEnd();
+		
+		glColor3f(0.0, 0.0, 1.0);
+		glPushMatrix();
+		glBegin(GL_LINES);
+		glVertex2f(-0.5, -0.5);
+		glVertex2f(0.5, 0.5);
+		glPopMatrix();
+		glEnd();
+
 #endif
 #endif
 
