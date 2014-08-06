@@ -27,6 +27,7 @@
 #include <GLFW/glfw3.h>
 
 #include <stdlib.h>
+#include <string.h>
 #include <stdio.h>
 #include <math.h>
 
@@ -35,8 +36,8 @@
 #define CH3 0
 #define CH4 0
 #define CH5 0
-#define CH6 1
-#define CH7 0
+#define CH6 0
+#define CH7 1
 #define CH8 0
 #define CH9 0
 #define CH10 0
@@ -67,6 +68,9 @@
 
 #define CH6_BLEND_TRIANGLE 0
 #define CH6_LINE_ANTI 1
+
+#define CH7_LIST 0
+#define CH7_FONT_LIST 1
 
 #define PI 3.1415926535898
 #define GL_TRUE 1
@@ -171,10 +175,74 @@ static void drawRightTriangle(void)
 	glVertex3f(0.9, 0.1, 0.0);
 	glEnd();
 }
-
+#endif
 #endif
 
+#if CH7
+#if CH7_LIST
+static GLint tri_list;
 
+static void drawLine()
+{
+	glBegin(GL_LINES);
+	glVertex2f(0, 0.5);
+	glVertex2f(15, 0.5);
+	glEnd();
+}
+#endif
+
+#if CH7_FONT_LIST
+#define PT 1
+#define STROKE 2
+#define END 3
+
+typedef struct charpoint {
+	GLfloat x, y;
+	int type;
+} CP;
+
+CP Adata[] = {
+	{0, 0, PT}, {0, 9, PT}, {1, 10, PT}, {4, 10, PT},
+	{5, 9, PT}, {5, 0, STROKE}, {0, 5, PT}, {5, 5, END}
+};
+
+CP Edata[] = {
+	{5, 0, PT}, {0, 0, PT}, {0, 10, PT}, {5, 10, STROKE},
+	{0, 5, PT}, {4, 5, END},
+};
+
+static void drawLetter(CP* l)
+{
+	glBegin(GL_LINE_STRIP);
+	while(l) {
+		switch (l->type) {
+			case PT:
+				glVertex2fv(&l->x);
+				break;
+			case STROKE:
+				glVertex2fv(&l->x);
+				glEnd();
+				glBegin(GL_LINE_STRIP);
+				break;
+			case END:
+				glVertex2fv(&l->x);
+				glEnd();
+				glTranslatef(8, 0, 0);
+				return;
+		}
+		l++;
+	}
+}
+
+char* test1 = "A E AA EE AAA EEE";
+char* test2 = "E A EE AA EEE AAA";
+
+static void printStr(char *s)
+{
+	GLsizei len = strlen(s);
+	glCallLists(len, GL_BYTE, (GLbyte *)s);
+}
+#endif
 #endif
 
 
@@ -649,7 +717,6 @@ NumElements[Cube2] = NumberOf(cubeIndices2);
 #endif
 
 #if CH6_LINE_ANTI
-#if 0
 	glEnable(GL_BLEND);
 	glEnable(GL_LINE_SMOOTH);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -658,7 +725,36 @@ NumElements[Cube2] = NumberOf(cubeIndices2);
 #endif
 #endif
 
+#if CH7
+#if CH7_LIST
+	tri_list = glGenLists(1);
+	glNewList(tri_list, GL_COMPILE);
+	glColor3f(1, 0, 0);
+	glBegin(GL_TRIANGLES);
+	glVertex2f(0, 0);
+	glVertex2f(1, 0);
+	glVertex2f(0, 1);
+	glEnd();
+	glTranslatef(0.5, 0, 0);
+	glEndList();
+#endif
+#if CH7_FONT_LIST
+	GLuint base;
+	base = glGenLists(128);
+	glListBase(base);
 
+	glNewList(base + 'A', GL_COMPILE);
+	drawLetter(Adata);
+	glEndList();
+
+	glNewList(base + 'E', GL_COMPILE);
+	drawLetter(Edata);
+	glEndList();
+
+	glNewList(base + ' ', GL_COMPILE);
+	glTranslatef(8.0, 0.0, 0.0);
+	glEndList();
+#endif
 #endif
 }
 
@@ -1098,6 +1194,51 @@ int main(void)
 		glPopMatrix();
 		glEnd();
 
+#endif
+#endif
+		
+#if CH7
+#if CH7_LIST
+        glfwGetFramebufferSize(window, &width, &height);
+        ratio = width / (float) height;
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glViewport(0, 0, width, height);
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
+        glOrtho(-ratio * 10, ratio * 10 , -1.f * 10, 1.f * 10, 10000.f, -10000.f);
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
+
+		glColor3f(0, 1, 0);
+		GLuint i;
+		for (i = 0; i < 10; i++) {
+			glCallList(tri_list);
+		}
+
+		drawLine();
+#endif
+#if CH7_FONT_LIST
+        glfwGetFramebufferSize(window, &width, &height);
+        ratio = width / (float) height;
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glViewport(0, 0, width, height);
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
+        glOrtho(-ratio * 100, ratio * 100 , -1.f * 100, 1.f * 100, 10000.f, -10000.f);
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
+
+		glColor3f(1, 1, 1);
+
+		glPushMatrix();
+		glTranslatef(-20, 20, 0);
+		printStr(test1);
+		glPopMatrix();
+
+		glPushMatrix();
+		glTranslatef(-20, 0, 0);
+		printStr(test2);
+		glPopMatrix();
 #endif
 #endif
 
