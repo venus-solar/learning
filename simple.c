@@ -37,8 +37,8 @@
 #define CH4 0
 #define CH5 0
 #define CH6 0
-#define CH7 1
-#define CH8 0
+#define CH7 0
+#define CH8 1
 #define CH9 0
 #define CH10 0
 #define CH11 0
@@ -70,7 +70,11 @@
 #define CH6_LINE_ANTI 1
 
 #define CH7_LIST 0
-#define CH7_FONT_LIST 1
+#define CH7_FONT_LIST 0
+
+#define CH8_BITMAP 0
+#define CH8_ANSCII 0
+#define CH8_CHECK 1
 
 #define PI 3.1415926535898
 #define GL_TRUE 1
@@ -245,6 +249,68 @@ static void printStr(char *s)
 #endif
 #endif
 
+#if CH8
+#if CH8_BITMAP
+GLubyte rasters[24] = {
+	0xc0, 0x00, 0xc0, 0x00, 0xc0, 0x00, 0xc0, 0x00, 0xc0, 0x00,
+	0xff, 0x00, 0xff, 0x00, 0xc0, 0x00, 0xc0, 0x00, 0xc0, 0x00,
+	0xff, 0xc0, 0xff, 0xc0,
+};
+#endif
+
+#if CH8_ANSCII
+GLubyte space[] = {
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+};
+
+GLubyte letters[][13] = {
+	{0x00, 0x00, 0xc3, 0xc3, 0xc3, 0xc3, 0xff, 0xc3, 0xc3, 0xc3, 0x66, 0x3c, 0x18},
+};
+
+GLuint offset;
+void makeRasterFont(void)
+{
+	GLuint i, j;
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+	offset = glGenLists(128);
+	for (i = 0, j = 'A'; i < sizeof(letters) / sizeof(letters[1]); i++, j++) {
+		glNewList(offset + j, GL_COMPILE);
+		glBitmap(8, 13, 0, 2, 10, 0, letters[i]);
+		glEndList();
+	}
+
+	glNewList(offset + ' ', GL_COMPILE);
+	glBitmap(8, 13, 0, 2, 10, 0, space);
+	glEndList();
+}
+
+void printString(char *s)
+{
+	glPushAttrib(GL_LIST_BIT);
+	glListBase(offset);
+	glCallLists(strlen(s), GL_UNSIGNED_BYTE, (GLubyte *)s);
+	glPopAttrib();
+}
+#endif
+
+#if CH8_CHECK
+#define CHECK_W 64
+#define CHECK_H 64
+GLubyte checkImage[CHECK_W][CHECK_H][3];
+void makeCheckImage(void)
+{
+	int i, j, c;
+	for (i = 0; i < CHECK_H; i++) {
+		for (j = 0; j < CHECK_W; j++) {
+			c = (((i & 0x8) == 0) ^ ((j & 0x8) == 0)) * 255;
+			checkImage[i][j][0] = (GLubyte) c;
+			checkImage[i][j][1] = (GLubyte) c;
+			checkImage[i][j][1] = (GLubyte) c;
+		}
+	}
+}
+#endif
+#endif
 
 static void error_callback(int error, const char* description)
 {
@@ -756,6 +822,22 @@ NumElements[Cube2] = NumberOf(cubeIndices2);
 	glEndList();
 #endif
 #endif
+
+#if CH8
+#if CH8_BITMAP
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+	glClearColor(0, 0, 0, 0);
+#endif
+#if CH8_ANSCII
+	glShadeModel(GL_FLAT);
+	makeRasterFont();
+#endif
+#if CH8_CHECK
+	glClearColor(0, 0, 0, 0);
+	makeCheckImage();
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+#endif
+#endif
 }
 
 int main(void)
@@ -1242,6 +1324,58 @@ int main(void)
 #endif
 #endif
 
+#if CH8
+#if CH8_BITMAP
+        glfwGetFramebufferSize(window, &width, &height);
+        ratio = width / (float) height;
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glViewport(0, 0, width, height);
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
+        glOrtho(-ratio * 100, ratio * 100, -1.f * 100, 1.f * 100, 10000.f, -10000.f);
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
+		glColor3f(1, 0, 0);
+		glRasterPos2i(20, 20);
+		glColor3f(1, 1, 0);
+		glBitmap(10, 12, 0, 0, 11, 0, rasters);
+		glBitmap(10, 12, 0, 0, 11, 0, rasters);
+		glBitmap(10, 12, 0, 0, 11, 0, rasters);
+		glFlush();
+#endif
+#if CH8_ANSCII
+        glfwGetFramebufferSize(window, &width, &height);
+        ratio = width / (float) height;
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glViewport(0, 0, width, height);
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
+        glOrtho(-ratio * 100, ratio * 100, -1.f * 100, 1.f * 100, 10000.f, -10000.f);
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
+		glColor3f(1, 0, 0);
+		glRasterPos2i(20, 60);
+		printString("A AA AAA A   A");
+		glRasterPos2i(20, 40);
+		printString("A AA AAA A A  A");
+#endif
+
+#if CH8_CHECK
+        glfwGetFramebufferSize(window, &width, &height);
+        ratio = width / (float) height;
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glViewport(0, 0, width, height);
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
+        glOrtho(-ratio * 100, ratio * 100, -1.f * 100, 1.f * 100, 10000.f, -10000.f);
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
+		glColor3f(1, 0, 0);
+		glRasterPos2i(0, 0);
+		glDrawPixels(CHECK_W, CHECK_H, GL_RGB, GL_UNSIGNED_BYTE, checkImage);
+
+#endif
+#endif
 
         glfwSwapBuffers(window);
         glfwPollEvents();
