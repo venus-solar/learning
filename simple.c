@@ -38,8 +38,8 @@
 #define CH5 0
 #define CH6 0
 #define CH7 0
-#define CH8 1
-#define CH9 0
+#define CH8 0
+#define CH9 1
 #define CH10 0
 #define CH11 0
 #define CH12 0
@@ -75,6 +75,8 @@
 #define CH8_BITMAP 0
 #define CH8_ANSCII 0
 #define CH8_CHECK 1
+
+#define CH9_CHECK 1
 
 #define PI 3.1415926535898
 #define GL_TRUE 1
@@ -305,7 +307,29 @@ void makeCheckImage(void)
 			c = (((i & 0x8) == 0) ^ ((j & 0x8) == 0)) * 255;
 			checkImage[i][j][0] = (GLubyte) c;
 			checkImage[i][j][1] = (GLubyte) c;
+			checkImage[i][j][2] = (GLubyte) c;
+		}
+	}
+}
+#endif
+#endif
+
+#if CH9
+#if CH9_CHECK
+#define CHECK_W 64
+#define CHECK_H 64
+GLubyte checkImage[CHECK_W][CHECK_H][4];
+static GLuint texName;
+void makeCheckImage(void)
+{
+	int i, j, c;
+	for (i = 0; i < CHECK_H; i++) {
+		for (j = 0; j < CHECK_W; j++) {
+			c = (((i & 0x8) == 0) ^ ((j & 0x8) == 0)) * 255;
+			checkImage[i][j][0] = (GLubyte) c;
 			checkImage[i][j][1] = (GLubyte) c;
+			checkImage[i][j][2] = (GLubyte) c;
+			checkImage[i][j][3] = 255;
 		}
 	}
 }
@@ -836,6 +860,23 @@ NumElements[Cube2] = NumberOf(cubeIndices2);
 	glClearColor(0, 0, 0, 0);
 	makeCheckImage();
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+#endif
+#endif
+
+#if CH9
+#if CH9_CHECK
+	glClearColor(0, 0, 0, 0);
+	glShadeModel(GL_FLAT);
+	glEnable(GL_DEPTH_TEST);
+	makeCheckImage();
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+	glGenTextures(1, &texName);
+	glBindTexture(GL_TEXTURE_2D, texName);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, CHECK_W, CHECK_H, 0, GL_RGBA, GL_UNSIGNED_BYTE, checkImage);
 #endif
 #endif
 }
@@ -1374,6 +1415,48 @@ int main(void)
 		glRasterPos2i(0, 0);
 		glDrawPixels(CHECK_W, CHECK_H, GL_RGB, GL_UNSIGNED_BYTE, checkImage);
 
+#endif
+#endif
+
+#if CH9
+#if CH9_CHECK
+        glfwGetFramebufferSize(window, &width, &height);
+        ratio = width / (float) height;
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glViewport(0, 0, width, height);
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
+        //glOrtho(-ratio * 100, ratio * 100, -1.f * 100, 1.f * 100, 10000.f, -10000.f);
+		glFrustum(-1, 1, -1/ratio, 1/ratio, 1, 20);
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
+		glTranslatef(0, 0, -3.6);
+
+		glEnable(GL_TEXTURE_2D);
+		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+		glBindTexture(GL_TEXTURE_2D, texName);
+
+		glBegin(GL_QUADS);
+		glTexCoord2f(0, 0);
+		glVertex3f(-2, -1, -1);
+		glTexCoord2f(0, 1);
+		glVertex3f(-2, 1, -1);
+		glTexCoord2f(1, 1);
+		glVertex3f(0, 1, -1);
+		glTexCoord2f(1, 0);
+		glVertex3f(0, -1, -1);
+
+		glTexCoord2f(0, 0);
+		glVertex3f(1, -1, 0);
+		glTexCoord2f(0, 1);
+		glVertex3f(1, 1, 0);
+		glTexCoord2f(1, 1);
+		glVertex3f(2.41421, 1, -1.41421);
+		glTexCoord2f(1, 0);
+		glVertex3f(2.41421, -1, -1.41421);
+		glEnd();
+		glFlush();
+		glDisable(GL_TEXTURE_2D);
 #endif
 #endif
 
